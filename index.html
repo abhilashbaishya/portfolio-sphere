@@ -32,6 +32,17 @@
       color: rgba(255,255,255,0.85);
     }
 
+    @media (max-width: 600px) {
+      .header { top: 28px; left: 24px; font-size: 11px; }
+      .view-modes { top: 24px; }
+      .view-modes button { padding: 6px 14px; font-size: 11px; }
+      .footer { bottom: 28px; left: 24px; font-size: 10px; }
+      .counter { bottom: 28px; right: 24px; font-size: 11px; }
+      .lightbox-nav { display: none; }
+      .lightbox-close { top: 20px; right: 20px; }
+      .lightbox-counter { bottom: 20px; }
+    }
+
     .view-modes {
       position: fixed;
       top: 36px;
@@ -179,7 +190,7 @@
 
   <canvas id="canvas"></canvas>
 
-  <div class="footer">Scroll to explore</div>
+  <div class="footer" id="footer">Scroll to explore</div>
   <div class="counter" id="counter">01 — 12</div>
 
   <div class="lightbox" id="lightbox">
@@ -339,6 +350,68 @@
       scrollVel -= e.deltaY * 0.05;
     }, { passive: false });
 
+    // Touch detection
+    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    if (isTouch) document.getElementById('footer').textContent = 'Swipe to explore';
+
+    // Touch spin + tap
+    let touchStartX = 0, touchStartY = 0, touchLastX = 0;
+    let touchMoved = false;
+    let touchSpinResumeTimer = null;
+    let isTouchSpinning = false;
+
+    canvas.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      touchStartX = touchLastX = t.clientX;
+      touchStartY = t.clientY;
+      touchMoved = false;
+      isTouchSpinning = true;
+      clearTimeout(touchSpinResumeTimer);
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      const dx = t.clientX - touchLastX;
+      scrollVel += dx * 0.4;
+      touchLastX = t.clientX;
+      if (Math.abs(t.clientX - touchStartX) > 8 || Math.abs(t.clientY - touchStartY) > 8) {
+        touchMoved = true;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (!touchMoved) {
+        // Treat as tap — find tapped card
+        const mx = touchStartX, my = touchStartY;
+        for (let i = projectedCards.length - 1; i >= 0; i--) {
+          const c = projectedCards[i];
+          const hw = c.w / 2, hh = c.h / 2;
+          if (mx >= c.sx - hw && mx <= c.sx + hw && my >= c.sy - hh && my <= c.sy + hh) {
+            openLightbox(c.idx);
+            break;
+          }
+        }
+      }
+      // Resume auto-spin after 2s idle
+      touchSpinResumeTimer = setTimeout(() => { isTouchSpinning = false; }, 2000);
+    }, { passive: true });
+
+    // Lightbox swipe (prev/next or close)
+    let lbTouchStartX = 0, lbTouchStartY = 0;
+    lightbox.addEventListener('touchstart', (e) => {
+      lbTouchStartX = e.touches[0].clientX;
+      lbTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    lightbox.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - lbTouchStartX;
+      const dy = e.changedTouches[0].clientY - lbTouchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        lightboxStep(dx < 0 ? 1 : -1);
+      } else if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx)) {
+        closeLightbox();
+      }
+    }, { passive: true });
+
     // Mouse tracking
     canvas.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
@@ -431,8 +504,8 @@
       const cx = W / 2;
       const cy = H / 2;
 
-      // Auto-spin — only pauses when hovering over a card
-      if (!isHoveringCard) {
+      // Auto-spin — pauses when hovering a card (desktop) or actively swiping (touch)
+      if (!isHoveringCard && !isTouchSpinning) {
         spinAngle += SPIN_SPEED * dt;
       }
 
@@ -487,9 +560,9 @@
       // Store for click detection
       projectedCards = cards;
 
-      // Determine which card is hovered (front-to-back)
+      // Determine which card is hovered (front-to-back) — desktop only
       let hoveredIdx = -1;
-      if (isHovering) {
+      if (isHovering && !isTouch) {
         for (let i = cards.length - 1; i >= 0; i--) {
           const c = cards[i];
           const hw = c.w / 2, hh = c.h / 2;
