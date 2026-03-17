@@ -126,53 +126,6 @@
     }
     .lightbox-close:hover { background: rgba(255,255,255,0.2); }
 
-    /* Gallery overlay */
-    .gallery-overlay {
-      position: fixed;
-      inset: 0;
-      background: #e8e8e8;
-      z-index: 50;
-      display: none;
-      overflow-y: auto;
-      padding: 120px 40px 80px;
-    }
-    .gallery-overlay.active { display: block; }
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .gallery-item {
-      aspect-ratio: 3/4;
-      background: #fff;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .gallery-item:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-    }
-    .gallery-item img {
-      width: 100%; height: 100%; object-fit: cover;
-    }
-    .gallery-item .placeholder {
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
-      color: #999; font-size: 11px; font-weight: 500; gap: 6px;
-    }
-    .placeholder-icon {
-      width: 30px; height: 30px;
-      border: 2px dashed #ccc; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #ccc;
-    }
   </style>
 </head>
 <body>
@@ -183,14 +136,9 @@
     <button data-mode="flat">Flat</button>
     <button data-mode="tilt">Tilt</button>
     <button class="active" data-mode="ring">Ring</button>
-    <button data-mode="gallery">Gallery</button>
   </div>
 
   <canvas id="canvas"></canvas>
-
-  <div class="gallery-overlay" id="galleryOverlay">
-    <div class="gallery-grid" id="galleryGrid"></div>
-  </div>
 
   <div class="footer">Scroll to explore</div>
   <div class="counter" id="counter">01 — 08</div>
@@ -205,22 +153,24 @@
     // CONFIGURATION — Add your images here
     // =============================================
     const items = [
-      { src: 'images/01.jpg', title: 'Project 01' },
-      { src: 'images/02.jpg', title: 'Project 02' },
-      { src: 'images/03.jpg', title: 'Project 03' },
-      { src: 'images/04.jpg', title: 'Project 04' },
-      { src: 'images/05.jpg', title: 'Project 05' },
-      { src: 'images/06.jpg', title: 'Project 06' },
-      { src: 'images/07.jpg', title: 'Project 07' },
-      { src: 'images/08.jpg', title: 'Project 08' },
+      { src: 'images/01.webp', title: 'Project 01' },
+      { src: 'images/02.webp', title: 'Project 02' },
+      { src: 'images/03.webp', title: 'Project 03' },
+      { src: 'images/04.webp', title: 'Project 04' },
+      { src: 'images/05.webp', title: 'Project 05' },
+      { src: 'images/06.webp', title: 'Project 06' },
+      { src: 'images/07.webp', title: 'Project 07' },
+      { src: 'images/08.webp', title: 'Project 08' },
+      { src: 'images/09.webp', title: 'Project 09' },
+      { src: 'images/10.webp', title: 'Project 10' },
+      { src: 'images/11.webp', title: 'Project 11' },
+      { src: 'images/12.webp', title: 'Project 12' },
     ];
     // =============================================
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const counterEl = document.getElementById('counter');
-    const galleryOverlay = document.getElementById('galleryOverlay');
-    const galleryGrid = document.getElementById('galleryGrid');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImg');
     const lightboxClose = document.getElementById('lightboxClose');
@@ -243,23 +193,24 @@
     let RING_RADIUS = 0;
 
     // Mode tilt angles (degrees around X axis)
-    // tiltX: -90 = face-on circle, 0 = edge-on line
+    // -90 = face-on circle, 0 = edge-on line
     const MODE_TILT = {
-      flat:  { x: -15 },   // top-down spread
+      flat:  { x: -80 },   // near face-on circle (like reference Flat)
       tilt:  { x: -50 },   // angled view
-      ring:  { x: -80 },   // nearly face-on circle
+      ring:  { x: -40 },   // tilted diagonal ellipse (like reference Ring)
     };
 
     let currentMode = 'ring';
-    let currentTiltX = -80;
-    let targetTiltX = -80;
+    let currentTiltX = -40;
+    let targetTiltX = -40;
 
     // Spin angle (Y rotation of the ring)
     let spinAngle = 0; // degrees
 
     // Mouse state
     let mouseX = -9999, mouseY = -9999;
-    let isHovering = false;
+    let isHovering = false;      // mouse is on canvas
+    let isHoveringCard = false;  // mouse is over a card
 
     // Image loading
     const loadedImages = [];
@@ -324,7 +275,6 @@
     // Scroll interaction
     let scrollVel = 0;
     window.addEventListener('wheel', (e) => {
-      if (currentMode === 'gallery') return;
       e.preventDefault();
       scrollVel += e.deltaY * 0.05;
     }, { passive: false });
@@ -363,27 +313,8 @@
         document.querySelector('.view-modes .active').classList.remove('active');
         btn.classList.add('active');
         currentMode = btn.dataset.mode;
-
-        if (currentMode === 'gallery') {
-          galleryOverlay.classList.add('active');
-        } else {
-          galleryOverlay.classList.remove('active');
-          targetTiltX = MODE_TILT[currentMode].x;
-        }
+        targetTiltX = MODE_TILT[currentMode].x;
       });
-    });
-
-    // Gallery grid
-    items.forEach((item) => {
-      const gi = document.createElement('div');
-      gi.className = 'gallery-item';
-      if (item.src) {
-        gi.innerHTML = `<img src="${item.src}" alt="${item.title}" loading="lazy">`;
-      } else {
-        gi.innerHTML = `<div class="placeholder"><div class="placeholder-icon">+</div><span>${item.title}</span></div>`;
-      }
-      gi.addEventListener('click', () => openLightbox(item));
-      galleryGrid.appendChild(gi);
     });
 
     // Lightbox
@@ -411,8 +342,8 @@
       const cx = W / 2;
       const cy = H / 2;
 
-      // Auto-spin — pauses on hover
-      if (!isHovering) {
+      // Auto-spin — only pauses when hovering over a card
+      if (!isHoveringCard) {
         spinAngle += SPIN_SPEED * dt;
       }
 
@@ -426,11 +357,6 @@
       // Clear
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.clearRect(0, 0, W, H);
-
-      if (currentMode === 'gallery') {
-        requestAnimationFrame(animate);
-        return;
-      }
 
       // Compute card positions
       const cards = [];
@@ -563,6 +489,20 @@
         ctx.restore(); // clip
         ctx.restore(); // alpha + shadow
       }
+
+      // Check if mouse is over any card (test front-to-back)
+      isHoveringCard = false;
+      if (isHovering) {
+        for (let i = cards.length - 1; i >= 0; i--) {
+          const c = cards[i];
+          const hw = c.w / 2, hh = c.h / 2;
+          if (mouseX >= c.sx - hw && mouseX <= c.sx + hw && mouseY >= c.sy - hh && mouseY <= c.sy + hh) {
+            isHoveringCard = true;
+            break;
+          }
+        }
+      }
+      canvas.style.cursor = isHoveringCard ? 'pointer' : 'default';
 
       // Update counter — front-most card
       const front = cards[cards.length - 1];
