@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selected Works — Portfolio</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #e8e8e8;
+      color: #111;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body.dragging { cursor: grabbing; }
+
+    .header {
+      position: fixed;
+      top: 40px;
+      left: 50px;
+      z-index: 10;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .view-modes {
+      position: fixed;
+      top: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .view-modes button {
+      padding: 8px 20px;
+      border-radius: 24px;
+      border: 1.5px solid #bbb;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: #333;
+    }
+
+    .view-modes button.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    .view-modes button:hover:not(.active) {
+      background: #ddd;
+    }
+
+    .canvas-wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .canvas-wrap canvas {
+      display: block;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 40px;
+      left: 50px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #888;
+      z-index: 10;
+    }
+
+    .counter {
+      position: fixed;
+      bottom: 40px;
+      right: 50px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #888;
+      z-index: 10;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .lightbox.active { display: flex; opacity: 1; }
+    .lightbox img {
+      max-width: 80vw;
+      max-height: 80vh;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 30px; right: 40px;
+      color: #fff; font-size: 28px;
+      cursor: pointer; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      transition: background 0.2s;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+    /* Gallery mode overlay */
+    .gallery-overlay {
+      position: fixed;
+      inset: 0;
+      background: #e8e8e8;
+      z-index: 50;
+      display: none;
+      overflow-y: auto;
+      padding: 120px 40px 80px;
+    }
+    .gallery-overlay.active { display: block; }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .gallery-grid .gallery-item {
+      aspect-ratio: 3/4;
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .gallery-grid .gallery-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    .gallery-grid .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .gallery-grid .gallery-item .placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+      color: #999; font-size: 11px; font-weight: 500; gap: 6px;
+    }
+    .placeholder-icon {
+      width: 30px; height: 30px;
+      border: 2px dashed #ccc; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">Selected Works</div>
+
+  <div class="view-modes">
+    <button data-mode="flat">Flat</button>
+    <button data-mode="tilt">Tilt</button>
+    <button class="active" data-mode="ring">Ring</button>
+    <button data-mode="gallery">Gallery</button>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="gallery-overlay" id="galleryOverlay">
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <div class="footer">Scroll to explore</div>
+  <div class="counter" id="counter">01 — 08</div>
+
+  <div class="lightbox" id="lightbox">
+    <div class="lightbox-close" id="lightboxClose">&#x2715;</div>
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <script>
+    // =============================================
+    // CONFIGURATION — Add your images here
+    // =============================================
+    const items = [
+      { src: 'images/01.jpg', title: 'Project 01' },
+      { src: 'images/02.jpg', title: 'Project 02' },
+      { src: 'images/03.jpg', title: 'Project 03' },
+      { src: 'images/04.jpg', title: 'Project 04' },
+      { src: 'images/05.jpg', title: 'Project 05' },
+      { src: 'images/06.jpg', title: 'Project 06' },
+      { src: 'images/07.jpg', title: 'Project 07' },
+      { src: 'images/08.jpg', title: 'Project 08' },
+      { src: 'images/09.jpg', title: 'Project 09' },
+      { src: 'images/10.jpg', title: 'Project 10' },
+      { src: 'images/11.jpg', title: 'Project 11' },
+      { src: 'images/12.jpg', title: 'Project 12' },
+      { src: 'images/13.jpg', title: 'Project 13' },
+      { src: 'images/14.jpg', title: 'Project 14' },
+    ];
+    // =============================================
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const counterEl = document.getElementById('counter');
+    const galleryOverlay = document.getElementById('galleryOverlay');
+    const galleryGrid = document.getElementById('galleryGrid');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    const N = items.length;
+    const DPR = window.devicePixelRatio || 1;
+
+    // Card dimensions (small like reference)
+    const CARD_W = 120;
+    const CARD_H = 150;
+    const CARD_RADIUS = 5;
+
+    // Sphere radius
+    const SPHERE_R = Math.min(window.innerWidth, window.innerHeight) * 0.36;
+
+    // Load images
+    const loadedImages = [];
+    let imagesLoaded = 0;
+
+    items.forEach((item, i) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { imagesLoaded++; };
+      img.onerror = () => { imagesLoaded++; loadedImages[i] = null; };
+      img.src = item.src;
+      loadedImages[i] = img;
+    });
+
+    // Fibonacci sphere distribution
+    function fibSphere(count) {
+      const pts = [];
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      for (let i = 0; i < count; i++) {
+        const y = 1 - (i / (count - 1)) * 2; // -1 to 1
+        const r = Math.sqrt(1 - y * y);
+        const theta = golden * i;
+        pts.push({
+          x: Math.cos(theta) * r,
+          y: y * 0.85, // compress poles slightly
+          z: Math.sin(theta) * r
+        });
+      }
+      return pts;
+    }
+
+    const basePoints = fibSphere(N);
+
+    // State
+    let rotY = 0, rotX = -0.15; // slight initial tilt (radians)
+    let targetRotY = 0, targetRotX = -0.15;
+    let autoRotate = true;
+    let autoSpeed = 0.003; // radians per frame
+    let currentMode = 'ring';
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let dragBaseRotY = 0, dragBaseRotX = 0;
+    let velX = 0, velY = 0;
+    let lastPX = 0, lastPY = 0, lastPT = 0;
+    let momentum = { x: 0, y: 0 };
+
+    // Resize canvas
+    function resize() {
+      canvas.width = window.innerWidth * DPR;
+      canvas.height = window.innerHeight * DPR;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(DPR, DPR);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 3D rotation
+    function rotate3D(p, ry, rx) {
+      const cy = Math.cos(ry), sy = Math.sin(ry);
+      let x1 = p.x * cy + p.z * sy;
+      let z1 = -p.x * sy + p.z * cy;
+      let y1 = p.y;
+      const cx = Math.cos(rx), sx = Math.sin(rx);
+      let y2 = y1 * cx - z1 * sx;
+      let z2 = y1 * sx + z1 * cx;
+      return { x: x1, y: y2, z: z2 };
+    }
+
+    // Draw rounded rect
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
+    }
+
+    // Render frame
+    function render() {
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const cx = W / 2;
+      const cy = H / 2;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Compute projected positions
+      const projected = [];
+      for (let i = 0; i < N; i++) {
+        const rp = rotate3D(basePoints[i], rotY, rotX);
+        const scale = 0.5 + ((rp.z + 1) / 2) * 0.6; // 0.5 to 1.1
+        const alpha = 0.25 + ((rp.z + 1) / 2) * 0.75; // 0.25 to 1.0
+        projected.push({
+          idx: i,
+          sx: cx + rp.x * SPHERE_R,
+          sy: cy + rp.y * SPHERE_R,
+          z: rp.z,
+          scale,
+          alpha
+        });
+      }
+
+      // Sort back to front
+      projected.sort((a, b) => a.z - b.z);
+
+      // Draw each card
+      for (const p of projected) {
+        const w = CARD_W * p.scale;
+        const h = CARD_H * p.scale;
+        const x = p.sx - w / 2;
+        const y = p.sy - h / 2;
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+
+        // Shadow
+        ctx.shadowColor = 'rgba(0,0,0,' + (0.08 + p.z * 0.06) + ')';
+        ctx.shadowBlur = 12 * p.scale;
+        ctx.shadowOffsetY = 4 * p.scale;
+
+        // Card background
+        roundRect(ctx, x, y, w, h, CARD_RADIUS * p.scale);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        // Reset shadow for image
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Clip and draw image
+        ctx.save();
+        roundRect(ctx, x, y, w, h, CARD_RADIUS * p.scale);
+        ctx.clip();
+
+        const img = loadedImages[p.idx];
+        if (img && img.complete && img.naturalWidth > 0) {
+          // Cover fit
+          const imgRatio = img.naturalWidth / img.naturalHeight;
+          const cardRatio = w / h;
+          let sw, sh, sx, sy;
+          if (imgRatio > cardRatio) {
+            sh = img.naturalHeight;
+            sw = sh * cardRatio;
+            sx = (img.naturalWidth - sw) / 2;
+            sy = 0;
+          } else {
+            sw = img.naturalWidth;
+            sh = sw / cardRatio;
+            sx = 0;
+            sy = (img.naturalHeight - sh) / 2;
+          }
+          ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+        } else {
+          // Placeholder
+          ctx.fillStyle = '#f0f0f0';
+          ctx.fill();
+          ctx.fillStyle = '#ccc';
+          ctx.font = (10 * p.scale) + 'px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(items[p.idx].title, x + w/2, y + h/2 + 8);
+          // Plus icon
+          ctx.strokeStyle = '#ccc';
+          ctx.lineWidth = 1.5 * p.scale;
+          const iconSize = 14 * p.scale;
+          ctx.beginPath();
+          ctx.moveTo(x + w/2 - iconSize/2, y + h/2 - 8 * p.scale);
+          ctx.lineTo(x + w/2 + iconSize/2, y + h/2 - 8 * p.scale);
+          ctx.moveTo(x + w/2, y + h/2 - 8 * p.scale - iconSize/2);
+          ctx.lineTo(x + w/2, y + h/2 - 8 * p.scale + iconSize/2);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+        ctx.restore();
+      }
+
+      // Update counter
+      let frontIdx = 0, maxZ = -Infinity;
+      for (let i = 0; i < N; i++) {
+        const rp = rotate3D(basePoints[i], rotY, rotX);
+        if (rp.z > maxZ) { maxZ = rp.z; frontIdx = i; }
+      }
+      const disp = String(frontIdx + 1).padStart(2, '0');
+      counterEl.textContent = `${disp} — ${String(N).padStart(2, '0')}`;
+    }
+
+    // Animation loop
+    function animate() {
+      if (autoRotate && currentMode !== 'gallery') {
+        targetRotY += autoSpeed;
+      }
+
+      // Apply momentum friction
+      if (!isDragging) {
+        momentum.x *= 0.95;
+        momentum.y *= 0.95;
+        targetRotY += momentum.x;
+        if (currentMode === 'ring') {
+          targetRotX += momentum.y;
+          targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+        }
+      }
+
+      // Smooth interpolation
+      rotY += (targetRotY - rotY) * 0.08;
+      rotX += (targetRotX - rotX) * 0.08;
+
+      if (currentMode !== 'gallery') {
+        render();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Scroll interaction
+    window.addEventListener('wheel', (e) => {
+      if (currentMode === 'gallery') return;
+      e.preventDefault();
+      targetRotY += e.deltaY * 0.001;
+      if (currentMode === 'ring') {
+        targetRotX += e.deltaX * 0.001;
+        targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+      }
+      autoRotate = false;
+      momentum.x = 0;
+      momentum.y = 0;
+      clearTimeout(window._at);
+      window._at = setTimeout(() => { autoRotate = true; }, 3000);
+    }, { passive: false });
+
+    // Pointer drag
+    const getXY = (e) => {
+      const cx = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+      const cy = e.clientY ?? (e.touches && e.touches[0]?.clientY);
+      return [cx, cy];
+    };
+
+    const onDown = (e) => {
+      if (currentMode === 'gallery') return;
+      const [px, py] = getXY(e);
+      if (px == null) return;
+      isDragging = true;
+      autoRotate = false;
+      dragStartX = px; dragStartY = py;
+      dragBaseRotY = targetRotY;
+      dragBaseRotX = targetRotX;
+      lastPX = px; lastPY = py;
+      lastPT = Date.now();
+      momentum.x = 0; momentum.y = 0;
+      document.body.classList.add('dragging');
+    };
+
+    const onMove = (e) => {
+      if (!isDragging) return;
+      const [px, py] = getXY(e);
+      if (px == null) return;
+
+      targetRotY = dragBaseRotY - (px - dragStartX) * 0.004;
+      if (currentMode === 'ring') {
+        targetRotX = dragBaseRotX + (py - dragStartY) * 0.003;
+        targetRotX = Math.max(-1.2, Math.min(1.2, targetRotX));
+      }
+
+      const now = Date.now();
+      const dt = now - lastPT;
+      if (dt > 0) {
+        velX = -(px - lastPX) / dt;
+        velY = (py - lastPY) / dt;
+        lastPX = px; lastPY = py; lastPT = now;
+      }
+    };
+
+    const onUp = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      document.body.classList.remove('dragging');
+      momentum.x = velX * 0.08;
+      momentum.y = velY * 0.06;
+      clearTimeout(window._at);
+      window._at = setTimeout(() => { autoRotate = true; }, 3000);
+    };
+
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onUp);
+
+    // Click detection (find closest card to click)
+    canvas.addEventListener('click', (e) => {
+      const mx = e.clientX;
+      const my = e.clientY;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const cxc = W / 2, cyc = H / 2;
+
+      let bestDist = Infinity, bestIdx = -1;
+      for (let i = 0; i < N; i++) {
+        const rp = rotate3D(basePoints[i], rotY, rotX);
+        const scale = 0.5 + ((rp.z + 1) / 2) * 0.6;
+        const sx = cxc + rp.x * SPHERE_R;
+        const sy = cyc + rp.y * SPHERE_R;
+        const w = CARD_W * scale / 2;
+        const h = CARD_H * scale / 2;
+        if (mx >= sx - w && mx <= sx + w && my >= sy - h && my <= sy + h) {
+          if (rp.z > (bestIdx >= 0 ? rotate3D(basePoints[bestIdx], rotY, rotX).z : -Infinity)) {
+            bestIdx = i;
+          }
+        }
+      }
+      if (bestIdx >= 0 && items[bestIdx].src && Math.abs(momentum.x) < 0.001) {
+        openLightbox(items[bestIdx]);
+      }
+    });
+
+    // View modes
+    document.querySelectorAll('.view-modes button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('.view-modes .active').classList.remove('active');
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+
+        if (currentMode === 'gallery') {
+          galleryOverlay.classList.add('active');
+          document.body.style.cursor = 'default';
+        } else {
+          galleryOverlay.classList.remove('active');
+          document.body.style.cursor = 'grab';
+
+          if (currentMode === 'flat') {
+            targetRotX = -1.1; // looking down
+          } else if (currentMode === 'tilt') {
+            targetRotX = -0.45;
+          } else {
+            targetRotX = -0.15; // ring - slight tilt
+          }
+        }
+      });
+    });
+
+    // Build gallery grid
+    items.forEach((item, i) => {
+      const gi = document.createElement('div');
+      gi.className = 'gallery-item';
+      if (item.src) {
+        gi.innerHTML = `<img src="${item.src}" alt="${item.title}" loading="lazy">`;
+      } else {
+        gi.innerHTML = `<div class="placeholder"><div class="placeholder-icon">+</div><span>${item.title}</span></div>`;
+      }
+      gi.addEventListener('click', () => openLightbox(item));
+      galleryGrid.appendChild(gi);
+    });
+
+    // Lightbox
+    function openLightbox(item) {
+      if (!item.src) return;
+      lightboxImg.src = item.src;
+      lightbox.classList.add('active');
+      autoRotate = false;
+    }
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      autoRotate = true;
+    }
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+    // Start
+    animate();
+  </script>
+</body>
+</html>
