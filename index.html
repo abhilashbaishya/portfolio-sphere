@@ -111,6 +111,53 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Grid mode */
+    .grid-container {
+      display: none;
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #0e0e0e;
+      z-index: 5;
+      padding: 100px 40px 80px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .grid-container.active { display: block; }
+    .grid-masonry {
+      columns: 4;
+      column-gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid-masonry .grid-item {
+      break-inside: avoid;
+      margin-bottom: 16px;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      transition: opacity 0.3s ease;
+    }
+    .grid-masonry .grid-item img {
+      width: 100%;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .grid-masonry .grid-item:hover img {
+      transform: scale(1.03);
+    }
+    .grid-container:has(.grid-item:hover) .grid-item:not(:hover) {
+      opacity: 0.35;
+    }
+    @media (max-width: 900px) {
+      .grid-masonry { columns: 3; }
+    }
+    @media (max-width: 600px) {
+      .grid-container { padding: 80px 16px 60px; }
+      .grid-masonry { columns: 2; column-gap: 10px; }
+      .grid-masonry .grid-item { margin-bottom: 10px; }
+    }
+
     /* Lightbox */
     .lightbox {
       position: fixed;
@@ -186,9 +233,14 @@
     <button data-mode="flat">Flat</button>
     <button data-mode="tilt">Tilt</button>
     <button class="active" data-mode="ring">Ring</button>
+    <button data-mode="grid">Grid</button>
   </div>
 
   <canvas id="canvas"></canvas>
+
+  <div class="grid-container" id="gridContainer">
+    <div class="grid-masonry" id="gridMasonry"></div>
+  </div>
 
   <div class="footer" id="footer">Scroll to explore</div>
   <div class="counter" id="counter">01 — 12</div>
@@ -245,8 +297,25 @@
     const lightboxPrev = document.getElementById('lightboxPrev');
     const lightboxNext = document.getElementById('lightboxNext');
     const lightboxCounter = document.getElementById('lightboxCounter');
+    const gridContainer = document.getElementById('gridContainer');
+    const gridMasonry = document.getElementById('gridMasonry');
+    const footerEl = document.getElementById('footer');
 
     let lightboxIndex = -1;
+    let isGridMode = false;
+
+    // Populate grid
+    items.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'grid-item';
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.title;
+      img.loading = 'lazy';
+      div.appendChild(img);
+      div.addEventListener('click', () => openLightbox(i));
+      gridMasonry.appendChild(div);
+    });
 
     const N = items.length;
     const DPR = window.devicePixelRatio || 1;
@@ -346,6 +415,7 @@
     // Scroll interaction — positive deltaY (scroll down) spins forward (left)
     let scrollVel = 0;
     window.addEventListener('wheel', (e) => {
+      if (isGridMode) return; // let grid scroll naturally
       e.preventDefault();
       scrollVel -= e.deltaY * 0.05;
     }, { passive: false });
@@ -445,7 +515,20 @@
         document.querySelector('.view-modes .active').classList.remove('active');
         btn.classList.add('active');
         currentMode = btn.dataset.mode;
-        targetTiltX = MODE_TILT[currentMode].x;
+        isGridMode = currentMode === 'grid';
+
+        if (isGridMode) {
+          canvas.style.display = 'none';
+          gridContainer.classList.add('active');
+          counterEl.style.display = 'none';
+          footerEl.style.display = 'none';
+        } else {
+          canvas.style.display = 'block';
+          gridContainer.classList.remove('active');
+          counterEl.style.display = 'block';
+          footerEl.style.display = 'block';
+          targetTiltX = MODE_TILT[currentMode].x;
+        }
       });
     });
 
