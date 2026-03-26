@@ -879,9 +879,7 @@
           const depthNorm = (card.z + RING_RADIUS) / (2 * RING_RADIUS);
           let alpha = 1.0 - depthNorm * 0.55;
 
-          if (hoveredIdx !== -1 && !isHovered) {
-            alpha *= 0.35;
-          }
+          // No hover dimming — scale + border on hovered card is enough
 
           ctx.save();
           ctx.globalAlpha = alpha;
