@@ -42,33 +42,39 @@
 
     @media (max-width: 600px) {
       /* Respect the notch / Dynamic Island and home indicator (HIG safe areas).
-         Spacing follows an 8pt grid; interactive controls are >=44pt (HIG). */
+         Spacing follows an 8pt grid; interactive controls are >=44pt (HIG).
+         Everything aligns to the vertical centerline so the chrome reads as a
+         deliberate, symmetric composition rather than scattered labels. */
+
+      /* Top: name centered, segmented control centered directly below it */
       .header {
-        top: calc(env(safe-area-inset-top, 0px) + 8px);
-        left: calc(env(safe-area-inset-left, 0px) + 24px);
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
         font-size: 18px;
       }
-      /* Stack the tab bar below the header so they don't collide */
       .view-modes {
-        top: calc(env(safe-area-inset-top, 0px) + 48px);
+        top: calc(env(safe-area-inset-top, 0px) + 50px);
         padding: 4px;
       }
       .view-modes button { padding: 11px 18px; font-size: 14px; }
 
-      .footer {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-        left: calc(env(safe-area-inset-left, 0px) + 24px);
-        font-size: 13px;
-      }
-      .counter {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-        right: calc(env(safe-area-inset-right, 0px) + 24px);
-        font-size: 14px;
-      }
+      /* Bottom: drop the redundant swipe hint; stack toggle + counter centered.
+         !important because grid-mode JS toggles an inline display on .footer */
+      .footer { display: none !important; }
       .auto-toggle {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
         width: 44px;
         height: 44px;
+      }
+      .counter {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        text-align: center;
+        font-size: 14px;
       }
 
       .lightbox-nav { display: none; }
