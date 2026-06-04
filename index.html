@@ -38,11 +38,13 @@
     }
 
     @media (max-width: 600px) {
-      .header { top: 28px; left: 24px; font-size: 14px; }
-      .view-modes { top: 24px; }
-      .view-modes button { padding: 6px 14px; font-size: 12px; }
-      .footer { bottom: 28px; left: 24px; font-size: 12px; }
-      .counter { bottom: 28px; right: 24px; font-size: 13px; }
+      .header { top: 22px; left: 24px; font-size: 15px; }
+      /* Stack the tab bar below the header so they don't collide */
+      .view-modes { top: 58px; }
+      .view-modes button { padding: 6px 16px; font-size: 13px; }
+      .footer { bottom: 26px; left: 24px; font-size: 12px; }
+      .counter { bottom: 26px; right: 24px; font-size: 13px; }
+      .auto-toggle { bottom: 22px; }
       .lightbox-nav { display: none; }
       .lightbox-close { top: 20px; right: 20px; }
       .lightbox-counter { bottom: 20px; }
@@ -298,9 +300,9 @@
     const N = items.length;
     const DPR = window.devicePixelRatio || 1;
 
-    // Card dimensions
-    const CARD_W = 140;
-    const CARD_H = 175;
+    // Card dimensions — recomputed responsively in resize()
+    let CARD_W = 140;
+    let CARD_H = 175;
     const CARD_R = 0;
 
     // Rive-matched parameters
@@ -364,11 +366,23 @@
 
     // Resize
     function resize() {
-      canvas.width = window.innerWidth * DPR;
-      canvas.height = window.innerHeight * DPR;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      RING_RADIUS = Math.min(window.innerWidth, window.innerHeight) * 0.4;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+
+      // Scale card size to viewport so the ring reads cleanly on small screens.
+      // Cards stay proportional to the arc spacing between them (same look as
+      // desktop), instead of a fixed pixel width that overwhelms a phone.
+      const minDim = Math.min(W, H);
+      RING_RADIUS = minDim * (W < 600 ? 0.36 : 0.4);
+      const arcSpacing = (2 * Math.PI * RING_RADIUS) / N;
+      // ~0.62 of arc spacing matches the original 140px-on-desktop proportion
+      CARD_W = Math.max(54, Math.min(140, arcSpacing * 0.62));
+      CARD_H = CARD_W * 1.25;
+
       if (gridReady) computeGridSlots();
     }
     resize();
@@ -572,9 +586,11 @@
       const W = window.innerWidth;
       const H = window.innerHeight;
       gridPageH = H * 1.05; // each page is slightly more than viewport
+      // Boost image size on phones so scattered tiles aren't tiny
+      const sizeScale = W < 600 ? 1.7 : 1;
       for (let i = 0; i < items.length; i++) {
         const s = scatterMap[i % scatterMap.length];
-        const w = W * s.sf;
+        const w = W * s.sf * sizeScale;
         const img = loadedImages[i];
         const imgRatio = (img && img.complete && img.naturalWidth > 0) ? img.naturalHeight / img.naturalWidth : 1;
         const h = w * imgRatio;
