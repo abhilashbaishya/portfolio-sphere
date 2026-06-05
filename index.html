@@ -156,8 +156,10 @@
     }
     .lightbox.active { display: flex; opacity: 1; }
     .lightbox img {
-      max-width: 80vw;
-      max-height: 80vh;
+      /* Never wider than 100vw - 160px, so the side nav arrows always keep
+         an ~80px gutter and never crowd the image on narrow windows */
+      max-width: min(82vw, calc(100vw - 160px));
+      max-height: 84vh;
       border-radius: 0;
       box-shadow: 0 24px 80px rgba(0,0,0,0.6);
       transition: opacity 0.2s ease;
@@ -180,18 +182,17 @@
       transform: translateY(-50%);
       color: #fff;
       cursor: pointer;
-      width: 44px; height: 44px;
+      width: 38px; height: 38px;
       display: flex; align-items: center; justify-content: center;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 50%;
-      font-size: 18px;
       transition: background 0.2s;
       user-select: none;
     }
     .lightbox-nav:hover { background: rgba(255,255,255,0.16); }
-    .lightbox-nav.prev { left: 40px; }
-    .lightbox-nav.next { right: 40px; }
+    .lightbox-nav.prev { left: 20px; }
+    .lightbox-nav.next { right: 20px; }
 
     /* ============================================================
        MOBILE — must come after all base rules so it wins the cascade
