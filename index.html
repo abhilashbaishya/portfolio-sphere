@@ -110,17 +110,6 @@
       z-index: 10;
     }
 
-    .counter {
-      position: fixed;
-      bottom: 40px;
-      right: 50px;
-      font-size: 15px;
-      font-weight: 400;
-      color: rgba(255,255,255,0.35);
-      z-index: 10;
-      font-variant-numeric: tabular-nums;
-    }
-
     .auto-toggle {
       position: fixed;
       bottom: 40px;
@@ -139,10 +128,6 @@
       z-index: 10;
     }
     .auto-toggle:hover { background: rgba(255,255,255,0.12); }
-
-    /* Wrapper is transparent on desktop (children keep their own fixed
-       positions); becomes a centered flex row on mobile (see media query). */
-    .bottom-controls { display: contents; }
 
     /* Grid mode — uses canvas, no separate container needed */
 
@@ -198,18 +183,6 @@
     .lightbox-nav:hover { background: rgba(255,255,255,0.16); }
     .lightbox-nav.prev { left: 40px; }
     .lightbox-nav.next { right: 40px; }
-    .lightbox-counter {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: 'ABC Diatype', sans-serif;
-      font-size: 14px;
-      font-weight: 400;
-      color: rgba(255,255,255,0.35);
-      letter-spacing: 0;
-      font-variant-numeric: tabular-nums;
-    }
 
     /* ============================================================
        MOBILE — must come after all base rules so it wins the cascade
@@ -234,27 +207,14 @@
       }
       .view-modes button { padding: 8px 12px; font-size: 12px; }
 
-      /* Bottom: drop the redundant swipe hint; group toggle + counter into a
-         single centred row so they can never overlap. */
+      /* Bottom: drop the redundant swipe hint; centre the auto-rotate toggle
+         and lift it clear of the home indicator. */
       .footer { display: none !important; }
-      .bottom-controls {
-        display: flex;
-        position: fixed;
+      .auto-toggle {
         bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-        left: 50%;
-        transform: translateX(-50%);
-        align-items: center;
-        gap: 14px;
-        z-index: 10;
+        width: 44px;
+        height: 44px;
       }
-      .bottom-controls .auto-toggle,
-      .bottom-controls .counter {
-        position: static;
-        transform: none;
-        bottom: auto; left: auto; right: auto;
-      }
-      .auto-toggle { width: 44px; height: 44px; }
-      .counter { font-size: 13px; }
 
       .lightbox-nav { display: none; }
       .lightbox-close {
@@ -263,7 +223,6 @@
         width: 44px;
         height: 44px;
       }
-      .lightbox-counter { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font-size: 11px; }
     }
 
   </style>
@@ -282,13 +241,10 @@
   <canvas id="canvas"></canvas>
 
   <div class="footer" id="footer">Scroll to explore</div>
-  <div class="bottom-controls">
-    <div class="auto-toggle" id="autoToggle" title="Toggle auto-rotate">
-      <svg id="autoIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="3,1 12,7 3,13" fill="white" opacity="0.5"/>
-      </svg>
-    </div>
-    <div class="counter" id="counter">01 — 12</div>
+  <div class="auto-toggle" id="autoToggle" title="Toggle auto-rotate">
+    <svg id="autoIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="3,1 12,7 3,13" fill="white" opacity="0.5"/>
+    </svg>
   </div>
 
   <div class="lightbox" id="lightbox">
@@ -311,7 +267,6 @@
         <polyline points="7,2 11,6 7,10" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="lightbox-counter" id="lightboxCounter"></div>
   </div>
 
   <script>
@@ -336,13 +291,11 @@
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const counterEl = document.getElementById('counter');
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImg');
     const lightboxClose = document.getElementById('lightboxClose');
     const lightboxPrev = document.getElementById('lightboxPrev');
     const lightboxNext = document.getElementById('lightboxNext');
-    const lightboxCounter = document.getElementById('lightboxCounter');
     const footerEl = document.getElementById('footer');
 
     let lightboxIndex = -1;
@@ -694,11 +647,9 @@
           gridScrollY = 0;
           gridScrollVel = 0;
           computeGridSlots();
-          counterEl.style.display = 'none';
           footerEl.style.display = 'none';
           autoToggle.style.display = 'none';
         } else {
-          counterEl.style.display = 'block';
           footerEl.style.display = 'block';
           autoToggle.style.display = 'flex';
           targetTiltX = MODE_TILT[currentMode].x;
@@ -710,7 +661,6 @@
     function openLightbox(idx) {
       lightboxIndex = idx;
       lightboxImg.src = items[idx].src;
-      lightboxCounter.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
       lightbox.classList.add('active');
     }
     function lightboxStep(dir) {
@@ -718,7 +668,6 @@
       lightboxImg.style.opacity = '0';
       setTimeout(() => {
         lightboxImg.src = items[lightboxIndex].src;
-        lightboxCounter.textContent = `${String(lightboxIndex + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
         lightboxImg.style.opacity = '1';
       }, 150);
     }
@@ -999,13 +948,6 @@
         }
 
         canvas.style.cursor = isHoveringCard ? 'pointer' : 'default';
-
-        // Update counter — front-most card
-        const front = cards[cards.length - 1];
-        if (front) {
-          const disp = String(front.idx + 1).padStart(2, '0');
-          counterEl.textContent = `${disp} — ${String(N).padStart(2, '0')}`;
-        }
       }
 
       requestAnimationFrame(animate);
