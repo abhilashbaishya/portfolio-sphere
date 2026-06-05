@@ -20,6 +20,13 @@
       font-display: swap;
     }
 
+    :root {
+      /* Editorial easing vocabulary (matches the main portfolio site) */
+      --ease-out-editorial: cubic-bezier(0.16, 1, 0.3, 1); /* enters */
+      --ease-smooth: cubic-bezier(0.2, 0, 0, 1);           /* moves/slides */
+      --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);       /* drag snap-back (iOS) */
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -35,6 +42,16 @@
       -webkit-tap-highlight-color: transparent; /* no grey flash on tap */
       -webkit-touch-callout: none; /* no long-press save-image menu */
     }
+
+    /* Staggered entrance — opacity only, so it never fights the positioning
+       transforms on the centred chrome. Canvas eases in underneath. */
+    @keyframes ui-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes ui-rise { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    #canvas { animation: ui-fade-in 1s var(--ease-smooth) both; }
+    .header { animation: ui-rise 0.7s var(--ease-out-editorial) 0.12s both; }
+    .view-modes { animation: ui-fade-in 0.7s var(--ease-out-editorial) 0.22s both; }
+    .footer { animation: ui-fade-in 0.7s ease 0.32s both; }
+    .auto-toggle { animation: ui-fade-in 0.7s ease 0.32s both; }
 
     .header {
       position: fixed;
@@ -70,7 +87,7 @@
       height: calc(100% - 6px);
       border-radius: 22px;
       background: rgba(255,255,255,0.14);
-      transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: left 0.4s var(--ease-smooth), width 0.4s var(--ease-smooth);
       pointer-events: none;
       z-index: 0;
     }
@@ -83,7 +100,7 @@
       font-family: 'ABC Diatype', sans-serif;
       font-size: 13px;
       cursor: pointer;
-      transition: color 0.25s ease;
+      transition: color 0.25s ease, transform 0.14s var(--ease-out-editorial);
       color: rgba(255,255,255,0.4);
       letter-spacing: 0;
       font-weight: 400;
@@ -95,8 +112,14 @@
       color: #fff;
     }
 
-    .view-modes button:hover:not(.active) {
-      color: rgba(255,255,255,0.8);
+    .view-modes button:active {
+      transform: scale(0.94);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .view-modes button:hover:not(.active) {
+        color: rgba(255,255,255,0.8);
+      }
     }
 
     #canvas {
@@ -132,10 +155,13 @@
       border-radius: 50%;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.08);
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.14s var(--ease-out-editorial);
       z-index: 10;
     }
-    .auto-toggle:hover { background: rgba(255,255,255,0.12); }
+    .auto-toggle:active { transform: translateX(-50%) scale(0.9); }
+    @media (hover: hover) and (pointer: fine) {
+      .auto-toggle:hover { background: rgba(255,255,255,0.12); }
+    }
 
     /* Grid mode — uses canvas, no separate container needed */
 
@@ -151,9 +177,11 @@
       align-items: center;
       justify-content: center;
       opacity: 0;
-      transition: opacity 0.35s ease;
+      transition: opacity 0.3s var(--ease-smooth), background 0.3s var(--ease-smooth);
     }
-    .lightbox.active { display: flex; opacity: 1; }
+    /* display is toggled in JS so the enter transition can run from a mounted
+       state; .active drives opacity + the image scale. */
+    .lightbox.active { opacity: 1; }
     .lightbox img {
       /* Never wider than 100vw - 160px, so the side nav arrows always keep
          an ~80px gutter and never crowd the image on narrow windows */
@@ -161,8 +189,14 @@
       max-height: 84vh;
       border-radius: 0;
       box-shadow: 0 24px 80px rgba(0,0,0,0.6);
-      transition: opacity 0.2s ease;
+      transform: scale(0.94);
+      transition: transform 0.42s var(--ease-out-editorial), opacity 0.2s ease, filter 0.2s ease;
+      will-change: transform, opacity;
     }
+    .lightbox.active img { transform: scale(1); }
+    /* While dragging to dismiss, JS owns the transform/background — no transition */
+    .lightbox.dragging,
+    .lightbox.dragging img { transition: none; }
     .lightbox-close {
       position: absolute;
       top: 30px; right: 40px;
@@ -171,10 +205,13 @@
       display: flex; align-items: center; justify-content: center;
       border-radius: 50%;
       background: rgba(255,255,255,0.08);
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.14s var(--ease-out-editorial);
       border: 1px solid rgba(255,255,255,0.1);
     }
-    .lightbox-close:hover { background: rgba(255,255,255,0.16); }
+    .lightbox-close:active { transform: scale(0.88); }
+    @media (hover: hover) and (pointer: fine) {
+      .lightbox-close:hover { background: rgba(255,255,255,0.16); }
+    }
     .lightbox-nav {
       position: absolute;
       top: 50%;
@@ -186,12 +223,23 @@
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 50%;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.14s var(--ease-out-editorial);
       user-select: none;
     }
-    .lightbox-nav:hover { background: rgba(255,255,255,0.16); }
+    .lightbox-nav:active { transform: translateY(-50%) scale(0.88); }
+    @media (hover: hover) and (pointer: fine) {
+      .lightbox-nav:hover { background: rgba(255,255,255,0.16); }
+    }
     .lightbox-nav.prev { left: 20px; }
     .lightbox-nav.next { right: 20px; }
+
+    /* Respect users who prefer less motion: keep opacity, drop movement/scale */
+    @media (prefers-reduced-motion: reduce) {
+      #canvas, .header, .view-modes, .footer, .auto-toggle { animation: none; }
+      .view-modes-pill { transition: none; }
+      .lightbox img,
+      .lightbox.active img { transform: none; transition: opacity 0.2s ease; }
+    }
 
     /* ============================================================
        MOBILE — must come after all base rules so it wins the cascade
@@ -524,19 +572,71 @@
       touchSpinResumeTimer = setTimeout(() => { isTouchSpinning = false; }, 2000);
     }, { passive: true });
 
-    // Lightbox swipe (prev/next or close)
-    let lbTouchStartX = 0, lbTouchStartY = 0;
+    // Lightbox gestures: vertical drag-to-dismiss (finger-following, springs
+    // back or flings out), horizontal swipe for prev/next.
+    let lbStartX = 0, lbStartY = 0, lbStartT = 0;
+    let lbAxis = null;        // 'x' | 'y' | null (locked on first move)
+    let lbDragging = false;
+    let lbDidDrag = false;    // guards the backdrop click after a drag
+
     lightbox.addEventListener('touchstart', (e) => {
-      lbTouchStartX = e.touches[0].clientX;
-      lbTouchStartY = e.touches[0].clientY;
+      if (e.touches.length > 1) { lbDragging = false; return; } // ignore multitouch
+      lbStartX = e.touches[0].clientX;
+      lbStartY = e.touches[0].clientY;
+      lbStartT = Date.now();
+      lbAxis = null;
+      lbDragging = true;
+      lbDidDrag = false;
     }, { passive: true });
+
+    lightbox.addEventListener('touchmove', (e) => {
+      if (!lbDragging) return;
+      const dx = e.touches[0].clientX - lbStartX;
+      const dy = e.touches[0].clientY - lbStartY;
+      if (lbAxis === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+        lbAxis = Math.abs(dy) > Math.abs(dx) ? 'y' : 'x';
+        lbDidDrag = true;
+        if (lbAxis === 'y') lightbox.classList.add('dragging');
+      }
+      if (lbAxis === 'y') {
+        const prog = Math.min(Math.abs(dy) / window.innerHeight, 1);
+        lightboxImg.style.transform = `translateY(${dy}px) scale(${1 - prog * 0.3})`;
+        lightbox.style.background = `rgba(0,0,0,${(0.92 * (1 - prog * 0.85)).toFixed(3)})`;
+      }
+    }, { passive: true });
+
     lightbox.addEventListener('touchend', (e) => {
-      const dx = e.changedTouches[0].clientX - lbTouchStartX;
-      const dy = e.changedTouches[0].clientY - lbTouchStartY;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        lightboxStep(dx < 0 ? 1 : -1);
-      } else if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx)) {
-        closeLightbox();
+      if (!lbDragging) return;
+      lbDragging = false;
+      const dx = e.changedTouches[0].clientX - lbStartX;
+      const dy = e.changedTouches[0].clientY - lbStartY;
+      const dt = Date.now() - lbStartT || 1;
+
+      if (lbAxis === 'x' && Math.abs(dx) > 45) { lightboxStep(dx < 0 ? 1 : -1); return; }
+
+      if (lbAxis === 'y') {
+        const velocity = Math.abs(dy) / dt; // px/ms
+        const dismiss = Math.abs(dy) > window.innerHeight * 0.18 || velocity > 0.5;
+        if (dismiss) {
+          // fling out in the drag direction, then tear down
+          lightbox.classList.remove('dragging');
+          const dir = dy < 0 ? -1 : 1;
+          const from = lightboxImg.style.transform || 'translateY(0px) scale(1)';
+          lightboxImg.style.transition = 'none';
+          lightboxImg.animate(
+            [{ transform: from, opacity: 1 },
+             { transform: `translateY(${dir * window.innerHeight}px) scale(0.5)`, opacity: 0 }],
+            { duration: 280, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' }
+          );
+          lightbox.style.transition = 'opacity 0.26s ease, background 0.26s ease';
+          lightbox.style.opacity = '0';
+          setTimeout(resetLightbox, 280);
+        } else {
+          // spring back — re-enable CSS transition and clear the inline transform
+          lightbox.classList.remove('dragging');
+          lightboxImg.style.transform = '';
+          lightbox.style.background = '';
+        }
       }
     }, { passive: true });
 
@@ -678,26 +778,54 @@
     });
 
     // Lightbox
+    function resetLightbox() {
+      lightbox.style.display = 'none';
+      lightbox.classList.remove('active', 'dragging');
+      lightbox.style.opacity = '';
+      lightbox.style.background = '';
+      lightbox.style.transition = '';
+      lightboxImg.getAnimations().forEach(a => a.cancel());
+      lightboxImg.style.transform = '';
+      lightboxImg.style.opacity = '1';
+      lightboxImg.style.filter = '';
+    }
     function openLightbox(idx) {
       lightboxIndex = idx;
       lightboxImg.src = items[idx].src;
-      lightbox.classList.add('active');
+      // clear any leftover inline state from a previous drag/close
+      lightboxImg.style.transform = '';
+      lightboxImg.style.opacity = '1';
+      lightboxImg.style.filter = '';
+      lightbox.style.background = '';
+      lightbox.style.opacity = '';
+      lightbox.style.transition = '';
+      lightbox.classList.remove('dragging');
+      lightbox.style.display = 'flex';
+      // mount first, then activate next frame so the scale+fade enter runs
+      requestAnimationFrame(() => requestAnimationFrame(() => lightbox.classList.add('active')));
     }
     function lightboxStep(dir) {
       lightboxIndex = (lightboxIndex + dir + N) % N;
+      // blur-masked crossfade (blur bridges the two frames so it reads as one)
       lightboxImg.style.opacity = '0';
+      lightboxImg.style.filter = 'blur(8px)';
       setTimeout(() => {
         lightboxImg.src = items[lightboxIndex].src;
         lightboxImg.style.opacity = '1';
+        lightboxImg.style.filter = 'blur(0px)';
       }, 150);
     }
     function closeLightbox() {
-      lightbox.classList.remove('active');
+      lightbox.classList.remove('active', 'dragging'); // CSS exit (fade + shrink)
+      setTimeout(() => { if (!lightbox.classList.contains('active')) resetLightbox(); }, 340);
     }
     lightboxClose.addEventListener('click', closeLightbox);
     lightboxPrev.addEventListener('click', () => lightboxStep(-1));
     lightboxNext.addEventListener('click', () => lightboxStep(1));
-    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    lightbox.addEventListener('click', (e) => {
+      if (lbDidDrag) { lbDidDrag = false; return; } // ignore the click that follows a drag
+      if (e.target === lightbox) closeLightbox();
+    });
 
     document.addEventListener('keydown', (e) => {
       if (lightbox.classList.contains('active')) {
