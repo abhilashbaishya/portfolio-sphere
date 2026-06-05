@@ -42,40 +42,45 @@
 
     @media (max-width: 600px) {
       /* Respect the notch / Dynamic Island and home indicator (HIG safe areas).
-         Spacing follows an 8pt grid; interactive controls are >=44pt (HIG).
-         Everything aligns to the vertical centerline so the chrome reads as a
-         deliberate, symmetric composition rather than scattered labels. */
+         Type scales down for small screens; controls stay >=44pt tappable. */
 
-      /* Top: name centered, segmented control centered directly below it */
+      /* Top: name on the left, segmented control on the right — one row,
+         vertically centred against each other. */
       .header {
-        top: calc(env(safe-area-inset-top, 0px) + 10px);
-        left: 50%;
-        transform: translateX(-50%);
-        text-align: center;
-        font-size: 18px;
+        top: calc(env(safe-area-inset-top, 0px) + 22px);
+        left: 16px;
+        font-size: 15px;
       }
       .view-modes {
-        top: calc(env(safe-area-inset-top, 0px) + 50px);
-        padding: 4px;
+        top: calc(env(safe-area-inset-top, 0px) + 14px);
+        left: auto;
+        right: 16px;
+        transform: none;
+        padding: 3px;
       }
-      .view-modes button { padding: 11px 18px; font-size: 14px; }
+      .view-modes button { padding: 8px 12px; font-size: 12px; }
 
-      /* Bottom: drop the redundant swipe hint; stack toggle + counter centered.
-         !important because grid-mode JS toggles an inline display on .footer */
+      /* Bottom: drop the redundant swipe hint; group toggle + counter into a
+         single centred row so they can never overlap. */
       .footer { display: none !important; }
-      .auto-toggle {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
-        width: 44px;
-        height: 44px;
-      }
-      .counter {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+      .bottom-controls {
+        display: flex;
+        position: fixed;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
         left: 50%;
-        right: auto;
         transform: translateX(-50%);
-        text-align: center;
-        font-size: 14px;
+        align-items: center;
+        gap: 14px;
+        z-index: 10;
       }
+      .bottom-controls .auto-toggle,
+      .bottom-controls .counter {
+        position: static;
+        transform: none;
+        bottom: auto; left: auto; right: auto;
+      }
+      .auto-toggle { width: 44px; height: 44px; }
+      .counter { font-size: 13px; }
 
       .lightbox-nav { display: none; }
       .lightbox-close {
@@ -84,7 +89,7 @@
         width: 44px;
         height: 44px;
       }
-      .lightbox-counter { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+      .lightbox-counter { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font-size: 11px; }
     }
 
     .view-modes {
@@ -187,6 +192,10 @@
     }
     .auto-toggle:hover { background: rgba(255,255,255,0.12); }
 
+    /* Wrapper is transparent on desktop (children keep their own fixed
+       positions); becomes a centered flex row on mobile (see media query). */
+    .bottom-controls { display: contents; }
+
     /* Grid mode — uses canvas, no separate container needed */
 
     /* Lightbox */
@@ -270,11 +279,13 @@
   <canvas id="canvas"></canvas>
 
   <div class="footer" id="footer">Scroll to explore</div>
-  <div class="counter" id="counter">01 — 12</div>
-  <div class="auto-toggle" id="autoToggle" title="Toggle auto-rotate">
-    <svg id="autoIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="3,1 12,7 3,13" fill="white" opacity="0.5"/>
-    </svg>
+  <div class="bottom-controls">
+    <div class="auto-toggle" id="autoToggle" title="Toggle auto-rotate">
+      <svg id="autoIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="3,1 12,7 3,13" fill="white" opacity="0.5"/>
+      </svg>
+    </div>
+    <div class="counter" id="counter">01 — 12</div>
   </div>
 
   <div class="lightbox" id="lightbox">
