@@ -40,58 +40,6 @@
       color: rgba(255,255,255,0.85);
     }
 
-    @media (max-width: 600px) {
-      /* Respect the notch / Dynamic Island and home indicator (HIG safe areas).
-         Type scales down for small screens; controls stay >=44pt tappable. */
-
-      /* Top: name on the left, segmented control on the right — one row,
-         vertically centred against each other. */
-      .header {
-        top: calc(env(safe-area-inset-top, 0px) + 22px);
-        left: 16px;
-        font-size: 15px;
-      }
-      .view-modes {
-        top: calc(env(safe-area-inset-top, 0px) + 14px);
-        left: auto;
-        right: 16px;
-        transform: none;
-        padding: 3px;
-      }
-      .view-modes button { padding: 8px 12px; font-size: 12px; }
-
-      /* Bottom: drop the redundant swipe hint; group toggle + counter into a
-         single centred row so they can never overlap. */
-      .footer { display: none !important; }
-      .bottom-controls {
-        display: flex;
-        position: fixed;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-        left: 50%;
-        transform: translateX(-50%);
-        align-items: center;
-        gap: 14px;
-        z-index: 10;
-      }
-      .bottom-controls .auto-toggle,
-      .bottom-controls .counter {
-        position: static;
-        transform: none;
-        bottom: auto; left: auto; right: auto;
-      }
-      .auto-toggle { width: 44px; height: 44px; }
-      .counter { font-size: 13px; }
-
-      .lightbox-nav { display: none; }
-      .lightbox-close {
-        top: calc(env(safe-area-inset-top, 0px) + 12px);
-        right: calc(env(safe-area-inset-right, 0px) + 16px);
-        width: 44px;
-        height: 44px;
-      }
-      .lightbox-counter { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font-size: 11px; }
-    }
-
     .view-modes {
       position: fixed;
       top: 36px;
@@ -261,6 +209,61 @@
       color: rgba(255,255,255,0.35);
       letter-spacing: 0;
       font-variant-numeric: tabular-nums;
+    }
+
+    /* ============================================================
+       MOBILE — must come after all base rules so it wins the cascade
+       ============================================================ */
+    @media (max-width: 600px) {
+      /* Respect the notch / Dynamic Island and home indicator (HIG safe areas).
+         Type scales down for small screens; controls stay >=44pt tappable. */
+
+      /* Top: name on the left, segmented control on the right — one row,
+         vertically centred against each other. */
+      .header {
+        top: calc(env(safe-area-inset-top, 0px) + 22px);
+        left: 16px;
+        font-size: 15px;
+      }
+      .view-modes {
+        top: calc(env(safe-area-inset-top, 0px) + 14px);
+        left: auto;
+        right: 16px;
+        transform: none;
+        padding: 3px;
+      }
+      .view-modes button { padding: 8px 12px; font-size: 12px; }
+
+      /* Bottom: drop the redundant swipe hint; group toggle + counter into a
+         single centred row so they can never overlap. */
+      .footer { display: none !important; }
+      .bottom-controls {
+        display: flex;
+        position: fixed;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+        left: 50%;
+        transform: translateX(-50%);
+        align-items: center;
+        gap: 14px;
+        z-index: 10;
+      }
+      .bottom-controls .auto-toggle,
+      .bottom-controls .counter {
+        position: static;
+        transform: none;
+        bottom: auto; left: auto; right: auto;
+      }
+      .auto-toggle { width: 44px; height: 44px; }
+      .counter { font-size: 13px; }
+
+      .lightbox-nav { display: none; }
+      .lightbox-close {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        right: calc(env(safe-area-inset-right, 0px) + 16px);
+        width: 44px;
+        height: 44px;
+      }
+      .lightbox-counter { bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); font-size: 11px; }
     }
 
   </style>
