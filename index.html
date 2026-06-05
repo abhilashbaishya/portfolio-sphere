@@ -226,6 +226,12 @@
         height: 44px;
       }
 
+      /* No side arrows on mobile, so drop the desktop gutter cap and let the
+         image fill the screen. */
+      .lightbox img {
+        max-width: 92vw;
+        max-height: 88vh;
+      }
       /* Nav by swipe on mobile; close is a clean borderless × (no bulky pill) */
       .lightbox-nav { display: none; }
       .lightbox-close {
