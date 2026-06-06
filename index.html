@@ -190,7 +190,7 @@
       border-radius: 0;
       box-shadow: 0 24px 80px rgba(0,0,0,0.6);
       transform: scale(0.94);
-      transition: transform 0.42s var(--ease-out-editorial), opacity 0.2s ease, filter 0.2s ease;
+      transition: transform 0.42s var(--ease-out-editorial), opacity 0.16s ease, filter 0.16s ease;
       will-change: transform, opacity;
     }
     .lightbox.active img { transform: scale(1); }
@@ -806,14 +806,24 @@
     }
     function lightboxStep(dir) {
       lightboxIndex = (lightboxIndex + dir + N) % N;
-      // blur-masked crossfade (blur bridges the two frames so it reads as one)
+      const target = lightboxIndex;
+      const src = items[target].src;
+      // blur-masked crossfade. Fade the current frame fully out first, then
+      // swap src while hidden and only reveal once the NEW bitmap has decoded —
+      // otherwise the <img> shows the old image until decode and it flickers.
       lightboxImg.style.opacity = '0';
       lightboxImg.style.filter = 'blur(8px)';
       setTimeout(() => {
-        lightboxImg.src = items[lightboxIndex].src;
-        lightboxImg.style.opacity = '1';
-        lightboxImg.style.filter = 'blur(0px)';
-      }, 150);
+        if (target !== lightboxIndex) return; // superseded by a faster swipe
+        lightboxImg.src = src;
+        const reveal = () => {
+          if (target !== lightboxIndex) return;
+          lightboxImg.style.opacity = '1';
+          lightboxImg.style.filter = 'blur(0px)';
+        };
+        if (lightboxImg.decode) lightboxImg.decode().then(reveal).catch(reveal);
+        else reveal();
+      }, 170);
     }
     function closeLightbox() {
       lightbox.classList.remove('active', 'dragging'); // CSS exit (fade + shrink)
